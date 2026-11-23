@@ -1,0 +1,68 @@
+
+ThreadPoolExecutor: tool used to asynchronously execute tasks by managing a pool of worker threads
+
+Default values for newFixedThreadPool(n): 
+	Executors.newFixedThreadPool(
+		corePool = mandatory fixed number of threads
+		maxPool = hidden and automatically same as corePool
+		keepAliveTime = hidden and automatically 0L (64 bit integer 0) threads stay alive until shutdown
+		TimeUnit = hidden and automatically set to milliseconds
+		workQueue = hidden and automatically set to LinkedBlockingQueue (capacity unbounded Integer.MAX_VALUE) tasks wait here
+		ThreadFactory = optional and automatically set to standard, normal priority threads
+		rejectionHandler = hidden and automatically set to throw an exception when a task is rejected
+	)
+		
+		
+What kind of queue? : unbounded
+
+All required: 
+	new ThreadPoolExecutor (
+		int corePoolSize
+		int maximumPoolSize
+		long keepAliveTime
+		TimeUnit unit
+		BlockingQueue<Runnable> workQueue
+		RejectedExecutionHandler handler
+	)
+		
+Different QUEUES: 
+
+	LinkedBlockingQueue: thread safe first in first out, uses nodes
+		With capacity: bounded, max elements are limited
+		Without capacity: unbounded, max elements are limited by Integer.MAX_VALUE
+			maxPool is ignored
+		
+	ArrayBlockingQueue: thread safe bounded queue
+	
+	SynchronousQueue: blocking queue with zero internal capacity, is a rendezvous point between threads
+		put() operation blocks until another thread calls take(), relies on a producer and consumer thread
+		used in cached thread pools, submitted tasks are handed to an idle worker thread, if none available, new thread is made
+		
+		
+Rejection policies: 
+	AbortPolicy: 
+		throws a RejectedExecutionException when a executor can't accept a task
+		Triggers: 
+			Executor shut down
+			worker threads are busy, queue is full and pool has reached it's max size
+		Default for ThreadPoolExecutor
+		Stops task execution immediately and throws an exception rather than silently blocking the thread
+		for systems that have to know right away when they're overloaded
+	CallerRunsPolicy: 
+		Executes a rejected task directly in the caller thread rather than throwing an exception
+		Triggers: 
+			executor reaches maximum pool size and work queue is full
+		if executor has been shut down, task is discarded
+		Caller thread can't submit new tasks while running tasks, slowing down the producer and giving the thread pool time to catch up
+		Requires a bounded queue
+	DiscardPolicy: 
+		Silently drops submitted task when executor can't accept them
+		Triggers: 
+			executor queue is full and max threads are busy
+			executor has been shut down
+		Silent failure, callers will not know that a task was dropped
+		For non critical work
+	DiscardOldestPolicy: 
+		Drops the oldest unhandled task from the queue and retries the incoming task
+		If the executor is shut down, it discards the task
+		Silent loss and doesn't cancel tasks
