@@ -3,6 +3,7 @@ package com.example.demo;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,14 +39,20 @@ public class JobController {
 		
 		jobs.add(job);
 		
-		threadpool.submit(() -> {
-			try {
-				processor.processJob(job);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			    System.out.println("Job processing was interrupted.");
-			}
-		});
+		try {
+			threadpool.submit(() -> {
+				try {
+					processor.processJob(job);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				    System.out.println("Job processing was interrupted.");
+				}
+			});
+		} catch (RejectedExecutionException e) {
+			job.setStatus("REJECTED");
+			System.out.println("Job could not be submitted. Processor busy!");
+		}
+		
 		
 		return jobs;
 	}
